@@ -1,4 +1,5 @@
 # Projeto de ETL dos Sinais do Ephem
+[![coverage](https://raw.githubusercontent.com/GleytonLima/gds-ephem-etl/badges/jacoco.svg)](https://github.com/GleytonLima/gds-ephem-etl/actions/workflows/build_and_publish.yaml) [![branches coverage](https://raw.githubusercontent.com/GleytonLima/gds-ephem-etl/badges/branches.svg)](https://github.com/GleytonLima/gds-ephem-etl/actions/workflows/build_and_publish.yaml)
 
 Esta aplicação age como um middleware entre o aplicativo guardiões da saúde e o ephem.
 
@@ -141,6 +142,9 @@ LEFT JOIN sinal
 ON sinal.signal_id = gds.signal_id;
 ```
 
+## Exemplo de deploy na Digital Ocean
+
+Como exemplo de deploy na Digital Ocean, para fins de testes, pode ser utilizado o repositorio [gds-ephem-etl-deploy](https://github.com/GleytonLima/gds-ephem-etl-deploy).
 ## Tecnologias utilizadas
 
 - Java 11
