@@ -3,7 +3,7 @@ name: Build and Publish
 on:
   push:
     branches: [ main ]
-    paths: [ '**.java', '.github/workflows/build_and_publish.yaml', 'pom.xml' ]
+    paths: [ '**.java', '.github/workflows/build_and_publish.yaml', 'pom.xml', 'src/main/resources/logback-spring.xml' ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
