@@ -2,10 +2,10 @@ name: Build and Publish
 
 on:
   push:
-    branches: [ disabled ]
+    branches: [ main ]
     paths: [ '**.java', '.github/workflows/build_and_publish.yaml', 'pom.xml' ]
   pull_request:
-    branches: [ disabled ]
+    branches: [ main ]
   workflow_dispatch:
 
 env:
