@@ -1,0 +1,16 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:latest
+    container_name: gds_ephem_etl_db
+    ports:
+      - "5431:5432"
+    volumes:
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - postgres-etl-network
+    env_file:
+      - .env
+
+networks:
+  postgres-etl-network:
