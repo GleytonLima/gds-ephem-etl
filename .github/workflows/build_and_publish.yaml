@@ -116,7 +116,6 @@ jobs:
           docker push ${{ env.DOCKER_IMAGE_NAME }}
       - name: restart app on digital ocean
         uses: appleboy/ssh-action@v1.0.0
-        if: github.ref == 'refs/heads/desabilitado'
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.SSH_USERNAME }}
@@ -124,6 +123,6 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             cd gds-ephem-etl-deploy/
-            docker-compose stop gds-ephem-etl
-            docker-compose pull gds-ephem-etl
-            docker-compose up -d gds-ephem-etl
+            docker-compose stop gds_ephem_etl
+            docker-compose pull gds_ephem_etl
+            docker-compose up -d gds_ephem_etl
