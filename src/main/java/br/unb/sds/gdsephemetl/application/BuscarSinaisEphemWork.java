@@ -39,6 +39,7 @@ public class BuscarSinaisEphemWork {
                 log.info("Iniciando requisicao em: {}", url);
                 log.info("Buscando sinais da página {}...", page);
                 final var response = restTemplate.getForObject(url, SignalApiResponse.class);
+                log.info("Buscando sinais da página {} finalizada", page);
                 if (response != null && response.getEmbedded() != null && !response.getEmbedded().getSignals().isEmpty()) {
                     for (SignalApiResponse.SignalData signalData : response.getEmbedded().getSignals()) {
                         Sinal sinal = new Sinal();
