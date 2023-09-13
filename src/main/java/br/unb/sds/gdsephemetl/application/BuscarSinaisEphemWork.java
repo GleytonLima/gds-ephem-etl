@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import javax.transaction.Transactional;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -17,6 +19,7 @@ public class BuscarSinaisEphemWork {
 
     private final RestTemplate restTemplate;
 
+    @Transactional
     public void processar() {
         signalRepository.deleteAll();
 
@@ -51,7 +54,7 @@ public class BuscarSinaisEphemWork {
                 }
             } catch (Exception e) {
                 log.error("Erro ao buscar sinais da página " + page + ".", e);
-                hasMoreSignals = false;
+                throw e;
             }
         }
         log.info("Busca de sinais finalizada.");

@@ -14,6 +14,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -87,8 +88,7 @@ class BuscarSinaisEphemWorkTest {
         when(restTemplate.getForObject("http://example.com/api/sinais?page=0&size=100", SignalApiResponse.class))
                 .thenThrow(new RuntimeException("Erro na chamada da API"));
 
-        buscarSinaisEphemWork.processar();
-
+        assertThrows(RuntimeException.class, () -> buscarSinaisEphemWork.processar());
         verify(signalRepository, never()).save(any(Sinal.class));
     }
 }
