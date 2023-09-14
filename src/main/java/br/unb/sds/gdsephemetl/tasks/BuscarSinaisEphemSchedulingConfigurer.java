@@ -1,8 +1,6 @@
 package br.unb.sds.gdsephemetl.tasks;
 
-import br.unb.sds.gdsephemetl.application.BuscarFontesEphemWork;
-import br.unb.sds.gdsephemetl.application.BuscarSinaisEphemWork;
-import br.unb.sds.gdsephemetl.application.ConfiguracaoRepository;
+import br.unb.sds.gdsephemetl.application.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -25,6 +23,10 @@ public class BuscarSinaisEphemSchedulingConfigurer implements SchedulingConfigur
     private final ConfiguracaoRepository configuracaoRepository;
     private final BuscarSinaisEphemWork buscarSinaisEphemWork;
     private final BuscarFontesEphemWork buscarFontesEphemWork;
+
+    private final BuscarAcoesTomadasEphemWork buscarAcoesTomadasEphemWork;
+
+    private final BuscarRecomendacaoTecnicaEphemWork buscarRecomendacaoTecnicaEphemWork;
 
     @Override
     public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
@@ -57,6 +59,16 @@ public class BuscarSinaisEphemSchedulingConfigurer implements SchedulingConfigur
 
         taskRegistrar.addTriggerTask(
                 buscarFontesEphemWork::processar,
+                trigger
+        );
+
+        taskRegistrar.addTriggerTask(
+                buscarAcoesTomadasEphemWork::processar,
+                trigger
+        );
+
+        taskRegistrar.addTriggerTask(
+                buscarRecomendacaoTecnicaEphemWork::processar,
                 trigger
         );
     }
