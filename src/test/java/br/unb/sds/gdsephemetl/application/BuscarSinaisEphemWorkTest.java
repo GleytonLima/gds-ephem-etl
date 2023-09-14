@@ -45,7 +45,7 @@ class BuscarSinaisEphemWorkTest {
     @Test
     void testProcessarWithApiResponse() {
         final var configuracao = new Configuracao();
-        configuracao.setUrlDbRemoto("http://example.com/api/sinais");
+        configuracao.setDominioRemoto("http://example.com");
         when(configuracaoRepository.findById(BuscarSinaisEphemWork.ID_DEFAULT)).thenReturn(Optional.of(configuracao));
 
         final var signalApiResponse = new SignalApiResponse();
@@ -56,7 +56,7 @@ class BuscarSinaisEphemWorkTest {
         signalData.setDados(new IntNode(1));
         signals.add(signalData);
         signalApiResponse.getEmbedded().setSignals(signals);
-        when(restTemplate.getForObject("http://example.com/api/sinais?page=0&size=100", SignalApiResponse.class))
+        when(restTemplate.getForObject("http://example.com/api-integracao/v1/signals?page=0&size=100", SignalApiResponse.class))
                 .thenReturn(signalApiResponse);
 
         buscarSinaisEphemWork.processar();
@@ -68,11 +68,11 @@ class BuscarSinaisEphemWorkTest {
     @Test
     void testProcessarWithEmptyApiResponse() {
         final var configuracao = new Configuracao();
-        configuracao.setUrlDbRemoto("http://example.com/api/sinais");
+        configuracao.setDominioRemoto("http://example.com");
         when(configuracaoRepository.findById(BuscarSinaisEphemWork.ID_DEFAULT)).thenReturn(Optional.of(configuracao));
 
         final var signalApiResponse = new SignalApiResponse();
-        when(restTemplate.getForObject("http://example.com/api/sinais?page=0&size=100", SignalApiResponse.class))
+        when(restTemplate.getForObject("http://example.com/api-integracao/v1/signals?page=0&size=100", SignalApiResponse.class))
                 .thenReturn(signalApiResponse);
 
         buscarSinaisEphemWork.processar();
@@ -82,10 +82,10 @@ class BuscarSinaisEphemWorkTest {
     @Test
     void testProcessarWithException() {
         final var configuracao = new Configuracao();
-        configuracao.setUrlDbRemoto("http://example.com/api/sinais");
+        configuracao.setDominioRemoto("http://example.com");
         when(configuracaoRepository.findById(BuscarSinaisEphemWork.ID_DEFAULT)).thenReturn(Optional.of(configuracao));
 
-        when(restTemplate.getForObject("http://example.com/api/sinais?page=0&size=100", SignalApiResponse.class))
+        when(restTemplate.getForObject("http://example.com/api-integracao/v1/signals?page=0&size=100", SignalApiResponse.class))
                 .thenThrow(new RuntimeException("Erro na chamada da API"));
 
         assertThrows(RuntimeException.class, () -> buscarSinaisEphemWork.processar());

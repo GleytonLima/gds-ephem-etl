@@ -1,5 +1,6 @@
 package br.unb.sds.gdsephemetl.tasks;
 
+import br.unb.sds.gdsephemetl.application.BuscarFontesEphemWork;
 import br.unb.sds.gdsephemetl.application.BuscarSinaisEphemWork;
 import br.unb.sds.gdsephemetl.application.model.Configuracao;
 import org.junit.jupiter.api.Test;
@@ -15,7 +16,9 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class BuscarSinaisEphemSchedulingConfigurerTest {
     @Mock
-    private BuscarSinaisEphemWork work;
+    private BuscarSinaisEphemWork buscarSinaisEphemWork;
+    @Mock
+    private BuscarFontesEphemWork buscarFontesEphemWork;
     @InjectMocks
     private BuscarSinaisEphemSchedulingConfigurer schedulingConfigurer;
 
@@ -28,7 +31,9 @@ class BuscarSinaisEphemSchedulingConfigurerTest {
         schedulingConfigurer.configureTasks(taskRegistrar);
 
         taskRegistrar.getTriggerTaskList().get(0).getRunnable().run();
+        taskRegistrar.getTriggerTaskList().get(1).getRunnable().run();
 
-        verify(work, times(1)).processar();
+        verify(buscarSinaisEphemWork, times(1)).processar();
+        verify(buscarFontesEphemWork, times(1)).processar();
     }
 }

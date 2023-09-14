@@ -1,5 +1,5 @@
 # Define a imagem base
-FROM adoptopenjdk:11-jre-hotspot
+FROM openjdk:17-jdk-slim
 
 # Define o diretório de trabalho dentro do contêiner
 WORKDIR /app

@@ -1,7 +1,9 @@
 package br.unb.sds.gdsephemetl.application.model;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import lombok.Data;
+import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -14,12 +16,13 @@ import java.time.Instant;
 @Data
 @TypeDef(name = "json", typeClass = JsonType.class)
 @EntityListeners(AuditingEntityListener.class)
-public class Configuracao {
+public class Fonte {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
-    private int intervaloEtlEmSegundos;
-    private String dominioRemoto;
+    @Type(type = "json")
+    @Column(columnDefinition = "jsonb")
+    private JsonNode dados;
     @CreatedDate
     private Instant createdAt;
     @LastModifiedDate

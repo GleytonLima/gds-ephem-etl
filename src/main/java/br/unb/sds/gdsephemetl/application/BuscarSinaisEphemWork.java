@@ -34,15 +34,15 @@ public class BuscarSinaisEphemWork {
         }
         while (hasMoreSignals) {
             try {
-                final var urlRemoteDb = configuracao.get().getUrlDbRemoto();
-                final var url = urlRemoteDb + "?page=" + page + "&size=" + size;
+                final var urlRemoteDb = configuracao.get().getDominioRemoto();
+                final var url = urlRemoteDb + "/api-integracao/v1/signals?page=" + page + "&size=" + size;
                 log.info("Iniciando requisicao em: {}", url);
                 log.info("Buscando sinais da página {}...", page);
                 final var response = restTemplate.getForObject(url, SignalApiResponse.class);
                 log.info("Buscando sinais da página {} finalizada", page);
                 if (response != null && response.getEmbedded() != null && !response.getEmbedded().getSignals().isEmpty()) {
                     for (SignalApiResponse.SignalData signalData : response.getEmbedded().getSignals()) {
-                        Sinal sinal = new Sinal();
+                        final var sinal = new Sinal();
                         sinal.setSignalId(signalData.getSignalId());
                         sinal.setDados(signalData.getDados());
                         signalRepository.save(sinal);
