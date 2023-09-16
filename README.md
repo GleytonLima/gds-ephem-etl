@@ -130,24 +130,60 @@ Para fins de exibição dos dados no Google Data Studio, podem ser criadas views
 ```sql
 DROP VIEW IF EXISTS gds_ephem_integracao_view;
 CREATE OR REPLACE VIEW gds_ephem_integracao_view AS
-SELECT gds.event_source_id                          AS gds_id,
-       gds.signal_id                                AS signal_id,
-       gds.user_email                               AS user_email,
-       gds.data ->> 'evento_afetados'               AS evento_afetados,
-       gds.data ->> 'evento_detalhes'               AS evento_detalhes,
-       gds.data ->> 'evento_descricao'              AS evento_descricao,
-       gds.data ->> 'evento_data_ocorrencia'        AS evento_data_ocorrencia,
-       gds.data ->> 'evento_pais_ocorrencia'        AS evento_pais_ocorrencia,
-       gds.data ->> 'evento_qtde_envolvidos'        AS evento_qtde_envolvidos,
-       gds.data ->> 'evento_local_ocorrencia'       AS evento_local_ocorrencia,
-       gds.data ->> 'evento_estado_ocorrencia'      AS evento_estado_ocorrencia,
-       gds.data ->> 'evento_sabe_quando_ocorreu'    AS evento_sabe_quando_ocorreu,
-       gds.data ->> 'evento_municipio_ocorrencia'   AS evento_municipio_ocorrencia,
-       sinal.dados ->> 'signal_type'                AS ephem_sinal_tipo,
-       sinal.dados -> 'signal_stage_state_id' ->> 1 AS ephem_sinal_status,
-       sinal.dados -> 'general_hazard_id' ->> 1     AS ephem_general_hazard,
-       sinal.dados -> 'specific_hazard_id' ->> 1    AS ephem_specific_hazard,
-       sinal.dados ->> 'confidentiality'            AS ephem_confidentiality
+SELECT gds.event_source_id                             AS gds_id,
+       gds.signal_id                                   AS signal_id,
+       gds.user_email                                  AS user_email,
+       gds.data ->> 'evento_afetados'                  AS evento_afetados,
+       gds.data ->> 'evento_detalhes'                  AS evento_detalhes,
+       gds.data ->> 'evento_descricao'                 AS evento_descricao,
+       gds.data ->> 'evento_data_ocorrencia'           AS evento_data_ocorrencia,
+       gds.data ->> 'evento_pais_ocorrencia'           AS evento_pais_ocorrencia,
+       gds.data ->> 'evento_qtde_envolvidos'           AS evento_qtde_envolvidos,
+       gds.data ->> 'evento_local_ocorrencia'          AS evento_local_ocorrencia,
+       gds.data ->> 'evento_estado_ocorrencia'         AS evento_estado_ocorrencia,
+       gds.data ->> 'evento_sabe_quando_ocorreu'       AS evento_sabe_quando_ocorreu,
+       gds.data ->> 'evento_municipio_ocorrencia'      AS evento_municipio_ocorrencia,
+       sinal.dados ->> 'id'                            AS signal_id,
+       sinal.dados -> 'signal_stage_state_id' ->> 1    AS ephem_sinal_status,
+       sinal.dados -> 'general_hazard_id' ->> 1        AS ephem_general_hazard,
+       sinal.dados -> 'specific_hazard_id' ->> 1       AS ephem_specific_hazard,
+       sinal.dados ->> 'confidentiality'               AS ephem_confidentiality,
+       sinal.dados ->> 'incident_date'                 AS ephem_incident_date,
+       sinal.dados ->> 'name'                          AS ephem_name,
+       sinal.dados ->> 'active'                        AS ephem_active,
+       sinal.dados ->> 'outcome'                       AS ephem_outcome,
+       sinal.dados -> 'tag_ids' ->> 1                  AS ephem_tag,
+       sinal.dados -> 'state_id' ->> 1                 AS ephem_state,
+       sinal.dados ->> 'was_event'                     AS ephem_was_event,
+       sinal.dados -> 'country_id' ->> 1               AS ephem_country,
+       sinal.dados ->> 'was_closed'                    AS ephem_was_closed,
+       sinal.dados ->> 'create_date'                   AS ephem_create_date,
+       sinal.dados ->> 'date_closed'                   AS ephem_date_closed,
+       sinal.dados ->> 'description'                   AS ephem_description,
+       sinal.dados -> 'message_ids'                    AS ephem_message_ids,
+       sinal.dados ->> 'report_date'                   AS ephem_report_date,
+       sinal.dados ->> 'signal_type'                   AS ephem_signal_type,
+       sinal.dados -> 'aetiology_id' ->> 1             AS ephem_aetiology,
+       sinal.dados ->> 'display_name'                  AS ephem_display_name,
+       sinal.dados -> 'district_ids'                   AS ephem_district_ids,
+       sinal.dados ->> 'verification'                  AS ephem_verification,
+       sinal.dados ->> '__last_update'                 AS ephem_last_update,
+       sinal.dados ->> 'verified_date'                 AS ephem_verified_date,
+       sinal.dados ->> 'was_discarded'                 AS ephem_was_discarded,
+       sinal.dados ->> 'was_monitored'                 AS ephem_was_monitored,
+       sinal.dados ->> 'was_event_date'                AS ephem_was_event_date,
+       sinal.dados ->> 'is_event_closed'               AS ephem_is_event_closed,
+       sinal.dados ->> 'people_affected'               AS ephem_people_affected,
+       sinal.dados ->> 'was_closed_date'               AS ephem_was_closed_date,
+       sinal.dados ->> 'animals_affected'              AS ephem_animals_affected,
+       sinal.dados ->> 'was_discarded_date'            AS ephem_was_discarded_date,
+       sinal.dados ->> 'was_monitored_date'            AS ephem_was_monitored_date,
+       sinal.dados ->> 'date_outcome_decided'          AS ephem_date_outcome_decided,
+       sinal.dados -> 'verification_source_id' ->> 1   AS ephem_verification_source,
+       sinal.dados ->> 'was_under_verification'        AS ephem_was_under_verification,
+       sinal.dados ->> 'under_verification_date'       AS ephem_under_verification_date,
+       sinal.dados -> 'outcome_justification_id' ->> 1 AS ephem_outcome_justification,
+       sinal.dados ->> 'was_under_verification_date'   AS ephem_was_under_verification_date
 FROM public.gds_ephem_integracao_foreign_table AS gds
          LEFT JOIN sinal
                    ON sinal.signal_id = gds.signal_id;
@@ -263,8 +299,8 @@ FROM recomendacao_tecnica;
 Tem médio em dias para conclusão das ações tomadas:
 
 ```sql
-DROP VIEW IF EXISTS average_time_to_complete_actions;
-CREATE OR REPLACE VIEW average_time_to_complete_actions AS
+DROP VIEW IF EXISTS average_time_to_complete_actions_view;
+CREATE OR REPLACE VIEW average_time_to_complete_actions_view AS
 SELECT action_type                                                                             AS action_type,
        AVG(EXTRACT(EPOCH FROM (start_date::timestamp - complete_date::timestamp))) / 3600 / 24 AS avg_days_to_complete
 FROM acao_tomada_view
@@ -275,25 +311,56 @@ GROUP BY action_type;
 Quantidade de alertas positivos (eventos) (#8):
 
 ```sql
-DROP VIEW IF EXISTS alertas_positivos;
-CREATE OR REPLACE VIEW alertas_positivos AS
-SELECT DATE_TRUNC('month', ephem_was_event_date::timestamp) AS month,
-       COUNT(*)                                             AS total_alertas_positivos
+DROP VIEW IF EXISTS alertas_positivos_view;
+CREATE OR REPLACE VIEW alertas_positivos_view AS
+SELECT DATE_TRUNC('month', ephem_was_event_date::timestamp)                                                   AS month,
+       SUM(CASE
+               WHEN ephem_was_monitored = 'true' OR ephem_was_under_verification = 'true' THEN 1
+               ELSE 0 END)                                                                                    AS total_verification_or_monitored,
+       SUM(CASE WHEN ephem_was_event = 'true' THEN 1 ELSE 0 END)                                              AS total_event,
+       (SUM(CASE WHEN ephem_was_monitored = 'true' OR ephem_was_under_verification = 'true' THEN 1 ELSE 0 END) *
+        100.0) /
+       NULLIF(SUM(CASE WHEN ephem_was_event = 'true' THEN 1 ELSE 0 END), 0)                                   AS percent_verification_or_monitored_by_event
 FROM sinal_view
 WHERE ephem_was_event = 'true'
-GROUP BY month;
+group by month;
+```
+
+Quantidade de alertas verificados (#9):
+
+```sql
+DROP VIEW IF EXISTS alertas_confirmados_view;
+CREATE OR REPLACE VIEW alertas_confirmados_view AS
+SELECT DATE_TRUNC('month', ephem_report_date::timestamp)                     AS month,
+       SUM(CASE WHEN ephem_verification = 'verified' THEN 1 ELSE 0 END)      AS total_verified,
+       SUM(CASE WHEN ephem_report_date NOTNULL THEN 1 ELSE 0 END)            AS total_reported,
+       (SUM(CASE WHEN ephem_verification = 'verified' THEN 1 ELSE 0 END) * 100.0) /
+       NULLIF(SUM(CASE WHEN ephem_report_date NOTNULL THEN 1 ELSE 0 END), 0) AS percent_verified
+FROM sinal_view
+group by month;
+```
+
+Oportunidade Média de Detecção (#11):
+
+```sql
+DROP VIEW IF EXISTS alertas_delay_view;
+CREATE OR REPLACE VIEW alertas_delay_view AS
+SELECT DATE_TRUNC('month', ephem_report_date::timestamp)                  AS month,
+       AVG(ephem_report_date::timestamp - ephem_incident_date::timestamp) AS report_delay
+FROM sinal_view
+group by month;
 ```
 
 Quantidade de ações tomadas por tipo e mês (#29):
 
 ```sql
-DROP VIEW IF EXISTS total_actions_by_type;
-CREATE OR REPLACE VIEW total_actions_by_type AS
+DROP VIEW IF EXISTS total_acoes_por_tipo_view;
+CREATE OR REPLACE VIEW total_acoes_por_tipo_view AS
 SELECT action_type,
        DATE_TRUNC('month', create_date::timestamp) AS month,
        COUNT(*)                                    AS total_actions
 FROM acao_tomada_view
-GROUP BY action_type, month;
+GROUP BY month, action_type;
 ```
 
 ## Exemplo de deploy na Digital Ocean
