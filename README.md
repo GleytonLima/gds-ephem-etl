@@ -123,6 +123,8 @@ GRANT USAGE ON SCHEMA public TO << USER >>;
 GRANT SELECT ON TABLE << TABLE >> TO etl_user;
 ```
 
+
+
 ## Criação de views
 
 Para fins de exibição dos dados no Google Data Studio, podem ser criadas views no banco de dados.
@@ -143,7 +145,7 @@ SELECT gds.event_source_id                             AS gds_id,
        gds.data ->> 'evento_estado_ocorrencia'         AS evento_estado_ocorrencia,
        gds.data ->> 'evento_sabe_quando_ocorreu'       AS evento_sabe_quando_ocorreu,
        gds.data ->> 'evento_municipio_ocorrencia'      AS evento_municipio_ocorrencia,
-       sinal.dados ->> 'id'                            AS signal_id,
+       sinal.dados ->> 'id'                            AS ephem_signal_id,
        sinal.dados -> 'signal_stage_state_id' ->> 1    AS ephem_sinal_status,
        sinal.dados -> 'general_hazard_id' ->> 1        AS ephem_general_hazard,
        sinal.dados -> 'specific_hazard_id' ->> 1       AS ephem_specific_hazard,
@@ -349,6 +351,17 @@ SELECT DATE_TRUNC('month', ephem_report_date::timestamp)                  AS mon
        AVG(ephem_report_date::timestamp - ephem_incident_date::timestamp) AS report_delay
 FROM sinal_view
 group by month;
+```
+
+Quantidade de alertas por localizacao (#27 e #28)
+
+```sql
+DROP VIEW IF EXISTS alertas_por_local_view;
+CREATE OR REPLACE VIEW alertas_por_local_view AS
+SELECT evento_pais_ocorrencia, evento_estado_ocorrencia, evento_municipio_ocorrencia, evento_local_ocorrencia, DATE_TRUNC('month', ephem_report_date::timestamp) AS evento_mes, count(*)
+FROM gds_ephem_integracao_view
+GROUP BY evento_pais_ocorrencia, evento_estado_ocorrencia, evento_municipio_ocorrencia, evento_local_ocorrencia, evento_mes
+ORDER BY evento_mes DESC;
 ```
 
 Quantidade de ações tomadas por tipo e mês (#29):
