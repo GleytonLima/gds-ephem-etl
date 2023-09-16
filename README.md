@@ -123,8 +123,6 @@ GRANT USAGE ON SCHEMA public TO << USER >>;
 GRANT SELECT ON TABLE << TABLE >> TO etl_user;
 ```
 
-
-
 ## Criação de views
 
 Para fins de exibição dos dados no Google Data Studio, podem ser criadas views no banco de dados.
@@ -303,11 +301,19 @@ Tem médio em dias para conclusão das ações tomadas:
 ```sql
 DROP VIEW IF EXISTS average_time_to_complete_actions_view;
 CREATE OR REPLACE VIEW average_time_to_complete_actions_view AS
-SELECT action_type                                                                             AS action_type,
-       AVG(EXTRACT(EPOCH FROM (start_date::timestamp - complete_date::timestamp))) / 3600 / 24 AS avg_days_to_complete
+SELECT DATE_TRUNC('month', ephem_report_date::timestamp) AS month,
+       action_type                                       AS action_type,
+       action_status,
+       AVG(CASE
+               WHEN complete_date IS NULL OR complete_date = 'false' THEN
+                   EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - start_date::timestamp))
+               ELSE
+                   EXTRACT(EPOCH FROM (complete_date::timestamp - start_date::timestamp))
+           END)                                          AS avg_days_to_complete
 FROM acao_tomada_view
-WHERE action_status = 'completed'
-GROUP BY action_type;
+         INNER JOIN
+     sinal_view ON acao_tomada_view.signal_id::text = sinal_view.signal_id
+GROUP BY month, action_status, action_type;
 ```
 
 Quantidade de alertas positivos (eventos) (#8):
@@ -315,14 +321,14 @@ Quantidade de alertas positivos (eventos) (#8):
 ```sql
 DROP VIEW IF EXISTS alertas_positivos_view;
 CREATE OR REPLACE VIEW alertas_positivos_view AS
-SELECT DATE_TRUNC('month', ephem_was_event_date::timestamp)                                                   AS month,
+SELECT DATE_TRUNC('month', ephem_was_event_date::timestamp)                 AS month,
        SUM(CASE
                WHEN ephem_was_monitored = 'true' OR ephem_was_under_verification = 'true' THEN 1
-               ELSE 0 END)                                                                                    AS total_verification_or_monitored,
-       SUM(CASE WHEN ephem_was_event = 'true' THEN 1 ELSE 0 END)                                              AS total_event,
+               ELSE 0 END)                                                  AS total_verification_or_monitored,
+       SUM(CASE WHEN ephem_was_event = 'true' THEN 1 ELSE 0 END)            AS total_event,
        (SUM(CASE WHEN ephem_was_monitored = 'true' OR ephem_was_under_verification = 'true' THEN 1 ELSE 0 END) *
-        100.0) /
-       NULLIF(SUM(CASE WHEN ephem_was_event = 'true' THEN 1 ELSE 0 END), 0)                                   AS percent_verification_or_monitored_by_event
+        1.0) /
+       NULLIF(SUM(CASE WHEN ephem_was_event = 'true' THEN 1 ELSE 0 END), 0) AS percent_verification_or_monitored_by_event
 FROM sinal_view
 WHERE ephem_was_event = 'true'
 group by month;
@@ -336,7 +342,7 @@ CREATE OR REPLACE VIEW alertas_confirmados_view AS
 SELECT DATE_TRUNC('month', ephem_report_date::timestamp)                     AS month,
        SUM(CASE WHEN ephem_verification = 'verified' THEN 1 ELSE 0 END)      AS total_verified,
        SUM(CASE WHEN ephem_report_date NOTNULL THEN 1 ELSE 0 END)            AS total_reported,
-       (SUM(CASE WHEN ephem_verification = 'verified' THEN 1 ELSE 0 END) * 100.0) /
+       (SUM(CASE WHEN ephem_verification = 'verified' THEN 1 ELSE 0 END) * 1.0) /
        NULLIF(SUM(CASE WHEN ephem_report_date NOTNULL THEN 1 ELSE 0 END), 0) AS percent_verified
 FROM sinal_view
 group by month;
@@ -347,8 +353,8 @@ Oportunidade Média de Detecção (#11):
 ```sql
 DROP VIEW IF EXISTS alertas_delay_view;
 CREATE OR REPLACE VIEW alertas_delay_view AS
-SELECT DATE_TRUNC('month', ephem_report_date::timestamp)                  AS month,
-       AVG(ephem_report_date::timestamp - ephem_incident_date::timestamp) AS report_delay
+SELECT DATE_TRUNC('month', ephem_report_date::timestamp)                                        AS month,
+       AVG(EXTRACT(EPOCH FROM (ephem_report_date::timestamp - ephem_incident_date::timestamp))) AS report_delay_hours
 FROM sinal_view
 group by month;
 ```
@@ -358,9 +364,15 @@ Quantidade de alertas por localizacao (#27 e #28)
 ```sql
 DROP VIEW IF EXISTS alertas_por_local_view;
 CREATE OR REPLACE VIEW alertas_por_local_view AS
-SELECT evento_pais_ocorrencia, evento_estado_ocorrencia, evento_municipio_ocorrencia, evento_local_ocorrencia, DATE_TRUNC('month', ephem_report_date::timestamp) AS evento_mes, count(*)
+SELECT evento_pais_ocorrencia,
+       evento_estado_ocorrencia,
+       evento_municipio_ocorrencia,
+       evento_local_ocorrencia,
+       DATE_TRUNC('month', ephem_report_date::timestamp) AS evento_mes,
+       count(*)
 FROM gds_ephem_integracao_view
-GROUP BY evento_pais_ocorrencia, evento_estado_ocorrencia, evento_municipio_ocorrencia, evento_local_ocorrencia, evento_mes
+GROUP BY evento_pais_ocorrencia, evento_estado_ocorrencia, evento_municipio_ocorrencia, evento_local_ocorrencia,
+         evento_mes
 ORDER BY evento_mes DESC;
 ```
 
