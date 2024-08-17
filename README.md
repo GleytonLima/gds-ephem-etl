@@ -387,6 +387,75 @@ FROM acao_tomada_view
 GROUP BY month, action_type;
 ```
 
+## View Adicionais GDS
+
+```sql
+DROP VIEW IF EXISTS vw_vbe_users;
+CREATE VIEW vw_vbe_users AS 
+SELECT u.id,
+       u.user_name AS name,
+       u.email,
+       date(u.birthdate) AS birthdate,
+       date_part('year'::text, age(date(u.birthdate)::timestamp with time zone)) AS age,
+       get_age_group(date_part('year'::text, age(date(u.birthdate)::timestamp with time zone))) AS age_group,
+       date(u.created_at) AS created_at,
+       u.country,
+       u.state,
+       u.city,
+       u.gender,
+       u.race,
+       u.is_professional,
+       u.identification_code,
+       u.risk_group,
+       u.is_vigilance
+  FROM users u
+ WHERE u.deleted_by IS NULL;
+```
+
+Engajamento usuários
+
+```sql
+DROP VIEW IF EXISTS daily_engagement_percentage;
+CREATE OR REPLACE VIEW daily_engagement_percentage AS
+WITH date_range AS (
+    SELECT DISTINCT DATE(created_at) AS date
+    FROM flexible_answers
+    UNION
+    SELECT DISTINCT DATE(created_at) AS date
+    FROM users
+    WHERE is_professional = true
+),
+user_daily_stats AS (
+    SELECT 
+        dr.date,
+        COUNT(u.id) AS total_users,
+        COUNT(fa.id) AS users_answered
+    FROM 
+        date_range dr
+    CROSS JOIN LATERAL (
+        SELECT id
+        FROM users u
+        WHERE DATE(u.created_at) <= dr.date
+          AND u.is_professional = true
+    ) u
+    LEFT JOIN flexible_answers fa ON fa.user_id = u.id AND DATE(fa.created_at) = dr.date
+    GROUP BY 
+        dr.date
+)
+SELECT 
+    date,
+    total_users,
+    users_answered,
+    CASE 
+        WHEN total_users = 0 THEN 0
+        ELSE CAST((users_answered::float / total_users * 100) AS NUMERIC(5,2))
+    END AS percentage_answered
+FROM 
+    user_daily_stats
+ORDER BY 
+    date;
+```
+
 ## Exemplo de deploy na Digital Ocean
 
 Como exemplo de deploy na Digital Ocean, para fins de testes, pode ser utilizado o
