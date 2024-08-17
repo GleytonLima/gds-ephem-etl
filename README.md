@@ -243,7 +243,7 @@ Uma view para as ações tomadas:
 DROP VIEW IF EXISTS acao_tomada_view;
 CREATE OR REPLACE VIEW acao_tomada_view AS
 SELECT dados ->> 'id'                      AS id,
-       (dados ->> 'name')::boolean         AS name,
+       dados ->> 'name'                    AS name,
        (dados -> 'signal_id')::jsonb -> 0  AS signal_id,
        dados ->> 'start_date'              AS start_date,
        dados -> 'action_type' ->> 1        AS action_type,
@@ -280,7 +280,7 @@ Uma view para as recomendações técnicas:
 DROP VIEW IF EXISTS recomendacao_tecnica_view;
 CREATE OR REPLACE VIEW recomendacao_tecnica_view AS
 SELECT dados ->> 'id'                                       AS id,
-       (dados ->> 'name')::boolean                          AS name,
+       dados ->> 'name'                                     AS name,
        (dados ->> 'note')::text                             AS note,
        dados -> 'signal_id' -> 0                            AS signal_id,
        dados ->> 'create_date'                              AS create_date,
