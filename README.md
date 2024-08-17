@@ -423,7 +423,7 @@ WITH date_range AS (
     UNION
     SELECT DISTINCT DATE(created_at) AS date
     FROM users
-    WHERE is_professional = true
+    WHERE is_professional = true AND deleted_by IS NULL
 ),
 user_daily_stats AS (
     SELECT 
@@ -436,7 +436,7 @@ user_daily_stats AS (
         SELECT id
         FROM users u
         WHERE DATE(u.created_at) <= dr.date
-          AND u.is_professional = true
+          AND u.is_professional = true AND u.deleted_by IS NULL
     ) u
     LEFT JOIN flexible_answers fa ON fa.user_id = u.id AND DATE(fa.created_at) = dr.date
     GROUP BY 
@@ -453,7 +453,7 @@ SELECT
 FROM 
     user_daily_stats
 ORDER BY 
-    date;
+    date;	
 ```
 
 ## Exemplo de deploy na Digital Ocean
