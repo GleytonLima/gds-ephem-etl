@@ -414,7 +414,66 @@ SELECT u.id,
 
 Engajamento usuários
 
+Correção dos jsonbs mal formatados:
+
 ```sql
+CREATE OR REPLACE VIEW public.flexible_answers_jsonb_view AS
+SELECT 
+    id, 
+    flexible_form_version_id, 
+    CASE 
+        -- Verifica se o valor está em formato inválido, começando e terminando com aspas.
+        WHEN data::text LIKE '"{\\"%' THEN
+            -- Remove aspas externas e substitui \" por "
+            (REGEXP_REPLACE(SUBSTRING(data::text FROM 2 FOR LENGTH(data::text) - 2), '\\"', '"', 'g'))::jsonb
+        ELSE
+            null
+    END AS data_corrected,
+    user_id, 
+    created_at, 
+    updated_at, 
+    external_system_integration_id
+FROM public.flexible_answers;
+
+CREATE INDEX idx_flexible_answers_data_corrected ON public.flexible_answers USING GIN (data_corrected);
+
+DROP VIEW IF EXISTS flexible_answers_extracted;
+CREATE OR REPLACE VIEW public.flexible_answers_extracted AS
+SELECT
+    fa.id,
+    fa.flexible_form_version_id,
+    fa.user_id,
+    fa.created_at,
+    fa.updated_at,
+    fa.external_system_integration_id,
+    fa.data_corrected->>'report_type' as report_type,
+    (fa.data_corrected->>'send_at')::timestamp as send_at,
+    MAX(CASE WHEN ans->>'field' = 'evento_descricao' THEN ans->>'value' END) AS evento_descricao,
+    MAX(CASE WHEN ans->>'field' = 'evento_qtde_envolvidos' THEN ans->>'value' END) AS evento_qtde_envolvidos,
+    MAX(CASE WHEN ans->>'field' = 'evento_afetados' THEN ans->>'value' END) AS evento_afetados,
+    MAX(CASE WHEN ans->>'field' = 'evento_sabe_quando_ocorreu' THEN ans->>'value' END) AS evento_sabe_quando_ocorreu,
+    MAX(CASE WHEN ans->>'field' = 'evento_data_ocorrencia' THEN ans->>'value' END) AS evento_data_ocorrencia,
+    MAX(CASE WHEN ans->>'field' = 'evento_estado_ocorrencia' THEN ans->>'value' END) AS evento_estado_ocorrencia,
+    MAX(CASE WHEN ans->>'field' = 'evento_cidade_ocorrencia' THEN ans->>'value' END) AS evento_cidade_ocorrencia,
+    MAX(CASE WHEN ans->>'field' = 'evento_local_ocorrencia' THEN ans->>'value' END) AS evento_local_ocorrencia,
+    MAX(CASE WHEN ans->>'field' = 'evento_detalhes' THEN ans->>'value' END) AS evento_detalhes
+FROM 
+    public.flexible_answers_jsonb_view fa
+LEFT JOIN LATERAL jsonb_array_elements(fa.data_corrected->'answers') as ans ON true
+WHERE 
+    fa.data_corrected->>'report_type' IS NOT NULL
+    AND fa.data_corrected->>'report_type' != ''
+GROUP BY
+    fa.id,
+    fa.flexible_form_version_id,
+    fa.user_id,
+    fa.created_at,
+    fa.updated_at,
+    fa.external_system_integration_id,
+    fa.data_corrected->>'report_type',
+    fa.data_corrected->>'send_at';
+	
+	
 DROP VIEW IF EXISTS daily_engagement_percentage;
 CREATE OR REPLACE VIEW daily_engagement_percentage AS
 WITH date_range AS (
@@ -439,9 +498,11 @@ user_cumulative AS (
 user_daily_answers AS (
     SELECT 
         DATE(created_at) AS date,
-        COUNT(DISTINCT user_id) AS users_answered
+        COUNT(DISTINCT user_id) AS users_answered,
+        COUNT(*) FILTER (WHERE report_type = 'positive') AS positive_answers,
+        COUNT(*) FILTER (WHERE report_type = 'negative') AS negative_answers
     FROM 
-        flexible_answers
+        flexible_answers_extracted
     GROUP BY 
         DATE(created_at)
 )
@@ -449,6 +510,8 @@ SELECT
     uc.date,
     uc.total_users,
     COALESCE(uda.users_answered, 0) AS users_answered,
+    COALESCE(uda.positive_answers, 0) AS positive_answers,
+    COALESCE(uda.negative_answers, 0) AS negative_answers,
     CASE 
         WHEN uc.total_users = 0 THEN 0
         ELSE ROUND(CAST(COALESCE(uda.users_answered, 0) AS NUMERIC) / uc.total_users, 2)
