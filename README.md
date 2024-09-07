@@ -385,6 +385,7 @@ SELECT display_name,
        DATE_TRUNC('month', create_date::timestamp) AS month,
        COUNT(*)                                    AS total_actions
 FROM acao_tomada_view
+WHERE signal_id <> 'false'
 GROUP BY month, display_name;
 ```
 
@@ -575,7 +576,9 @@ SELECT
     u.is_professional,
     u.identification_code,
     u.risk_group,
-    u.is_vigilance
+    u.is_vigilance,
+    u.is_vbe,
+    u.deleted_by
 FROM 
     public.flexible_answers_jsonb_view fa
 LEFT JOIN LATERAL jsonb_array_elements(fa.data_corrected->'answers') as ans ON true
@@ -583,6 +586,8 @@ LEFT JOIN users u ON fa.user_id = u.id
 WHERE 
     fa.flexible_form_version_id = 31
     AND u.deleted_by IS NULL
+    AND u.is_vbe = true 
+    AND u.is_professional = true
 GROUP BY
     fa.id,
     fa.flexible_form_version_id,
@@ -600,7 +605,8 @@ GROUP BY
     u.is_professional,
     u.identification_code,
     u.risk_group,
-    u.is_vigilance;
+    u.is_vigilance,
+    u.is_vbe;
 	
 	
 DROP VIEW IF EXISTS daily_engagement_percentage;
@@ -620,7 +626,7 @@ user_cumulative AS (
         date_range dr
     CROSS JOIN users u
     WHERE 
-        u.is_vbe = true AND u.deleted_by IS NULL
+        u.is_vbe = true AND u.is_professional = true AND u.deleted_by IS NULL
     GROUP BY 
         dr.date
 ),
