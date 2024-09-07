@@ -253,6 +253,7 @@ SELECT dados ->> 'id'                      AS id,
        dados ->> 'action_status'           AS action_status,
        dados ->> 'complete_date'           AS complete_date,
        dados ->> 'action_details'          AS action_details,
+       dados ->> 'display_name'            AS display_name,
        dados -> 'action_focal_point' ->> 1 AS action_focal_point
 FROM acao_tomada;
 ```
@@ -380,11 +381,11 @@ Quantidade de ações tomadas por tipo e mês (#29):
 ```sql
 DROP VIEW IF EXISTS total_acoes_por_tipo_view;
 CREATE OR REPLACE VIEW total_acoes_por_tipo_view AS
-SELECT action_type,
+SELECT display_name,
        DATE_TRUNC('month', create_date::timestamp) AS month,
        COUNT(*)                                    AS total_actions
 FROM acao_tomada_view
-GROUP BY month, action_type;
+GROUP BY month, display_name;
 ```
 
 ## View Adicionais GDS
@@ -472,6 +473,134 @@ GROUP BY
     fa.external_system_integration_id,
     fa.data_corrected->>'report_type',
     fa.data_corrected->>'send_at';
+
+-- Detalhes sinais
+
+DROP VIEW IF EXISTS flexible_answers_signals;
+CREATE OR REPLACE VIEW public.flexible_answers_signals AS
+SELECT
+    fa.id,
+    fa.flexible_form_version_id,
+    fa.user_id,
+    fa.created_at,
+    fa.updated_at,
+    fa.external_system_integration_id,
+    fa.data_corrected->>'report_type' as report_type,
+    (fa.data_corrected->>'send_at')::timestamp as send_at,
+    MAX(CASE WHEN ans->>'field' = 'evento_descricao' THEN ans->>'value' END) AS evento_descricao,
+    MAX(CASE WHEN ans->>'field' = 'evento_qtde_envolvidos' THEN ans->>'value' END) AS evento_qtde_envolvidos,
+    MAX(CASE WHEN ans->>'field' = 'evento_afetados' THEN ans->>'value' END) AS evento_afetados,
+    MAX(CASE WHEN ans->>'field' = 'evento_sabe_quando_ocorreu' THEN ans->>'value' END) AS evento_sabe_quando_ocorreu,
+    MAX(CASE WHEN ans->>'field' = 'evento_data_ocorrencia' THEN ans->>'value' END) AS evento_data_ocorrencia,
+    MAX(CASE WHEN ans->>'field' = 'evento_estado_ocorrencia' THEN ans->>'value' END) AS evento_estado_ocorrencia,
+    MAX(CASE WHEN ans->>'field' = 'evento_cidade_ocorrencia' THEN ans->>'value' END) AS evento_cidade_ocorrencia,
+    MAX(CASE WHEN ans->>'field' = 'evento_local_ocorrencia' THEN ans->>'value' END) AS evento_local_ocorrencia,
+    MAX(CASE WHEN ans->>'field' = 'evento_detalhes' THEN ans->>'value' END) AS evento_detalhes
+FROM 
+    public.flexible_answers_jsonb_view fa
+LEFT JOIN LATERAL jsonb_array_elements(fa.data_corrected->'answers') as ans ON true
+WHERE 
+    fa.flexible_form_version_id = 31
+    AND fa.data_corrected->>'report_type' IS NOT NULL
+    AND fa.data_corrected->>'report_type' != ''
+GROUP BY
+    fa.id,
+    fa.flexible_form_version_id,
+    fa.user_id,
+    fa.created_at,
+    fa.updated_at,
+    fa.external_system_integration_id,
+    fa.data_corrected->>'report_type',
+    fa.data_corrected->>'send_at';
+
+-- Detalhes Lideres
+
+DROP VIEW IF EXISTS flexible_answers_leaders;
+CREATE OR REPLACE VIEW public.flexible_answers_leaders AS
+SELECT
+    fa.id,
+    fa.flexible_form_version_id,
+    fa.user_id,
+    fa.created_at,
+    fa.updated_at,
+    fa.external_system_integration_id,
+    MAX(CASE WHEN ans->>'field' = 'perfil_lideranca' THEN ans->>'value' END) AS perfil_lideranca,
+    MAX(CASE WHEN ans->>'field' = 'tempo_lideranca' THEN ans->>'value' END) AS tempo_lideranca,
+    MAX(CASE WHEN ans->>'field' = 'reside_comunidade' THEN ans->>'value' END) AS reside_comunidade,
+    MAX(CASE WHEN ans->>'field' = 'exerce_atividade_laboral' THEN ans->>'value' END) AS exerce_atividade_laboral,
+    MAX(CASE WHEN ans->>'field' = 'nivel_escolaridade' THEN ans->>'value' END) AS nivel_escolaridade,
+    MAX(CASE WHEN ans->>'field' = 'meio_residencia' THEN ans->>'value' END) AS meio_residencia,
+    MAX(CASE WHEN ans->>'field' = 'possui_redes_sociais' THEN ans->>'value' END) AS possui_redes_sociais,
+    MAX(CASE WHEN ans->>'field' = 'redes_sociais' THEN ans->>'value' END) AS redes_sociais
+FROM 
+    public.flexible_answers_jsonb_view fa
+LEFT JOIN LATERAL jsonb_array_elements(fa.data_corrected->'answers') as ans ON true
+WHERE 
+    fa.flexible_form_version_id = 31
+GROUP BY
+    fa.id,
+    fa.flexible_form_version_id,
+    fa.user_id,
+    fa.created_at,
+    fa.updated_at,
+    fa.external_system_integration_id;
+
+-- Tabelao usuarios. 
+
+DROP VIEW IF EXISTS leaders_full_data;
+CREATE OR REPLACE VIEW public.leaders_full_data AS
+SELECT
+    fa.id AS flexible_answer_id,
+    fa.flexible_form_version_id,
+    fa.user_id,
+    fa.created_at AS flexible_answer_created_at,
+    fa.updated_at AS flexible_answer_updated_at,
+    fa.external_system_integration_id,
+    MAX(CASE WHEN ans->>'field' = 'perfil_lideranca' THEN ans->>'value' END) AS perfil_lideranca,
+    MAX(CASE WHEN ans->>'field' = 'tempo_lideranca' THEN ans->>'value' END) AS tempo_lideranca,
+    MAX(CASE WHEN ans->>'field' = 'reside_comunidade' THEN ans->>'value' END) AS reside_comunidade,
+    MAX(CASE WHEN ans->>'field' = 'exerce_atividade_laboral' THEN ans->>'value' END) AS exerce_atividade_laboral,
+    MAX(CASE WHEN ans->>'field' = 'nivel_escolaridade' THEN ans->>'value' END) AS nivel_escolaridade,
+    MAX(CASE WHEN ans->>'field' = 'meio_residencia' THEN ans->>'value' END) AS meio_residencia,
+    MAX(CASE WHEN ans->>'field' = 'possui_redes_sociais' THEN ans->>'value' END) AS possui_redes_sociais,
+    MAX(CASE WHEN ans->>'field' = 'redes_sociais' THEN ans->>'value' END) AS redes_sociais,
+    date_part('year'::text, age(date(u.birthdate)::timestamp with time zone)) AS age,
+    get_age_group(date_part('year'::text, age(date(u.birthdate)::timestamp with time zone))) AS age_group,
+    date(u.created_at) AS user_created_at,
+    u.country,
+    u.state,
+    u.city,
+    u.gender,
+    u.race,
+    u.is_professional,
+    u.identification_code,
+    u.risk_group,
+    u.is_vigilance
+FROM 
+    public.flexible_answers_jsonb_view fa
+LEFT JOIN LATERAL jsonb_array_elements(fa.data_corrected->'answers') as ans ON true
+LEFT JOIN users u ON fa.user_id = u.id
+WHERE 
+    fa.flexible_form_version_id = 31
+    AND u.deleted_by IS NULL
+GROUP BY
+    fa.id,
+    fa.flexible_form_version_id,
+    fa.user_id,
+    fa.created_at,
+    fa.updated_at,
+    fa.external_system_integration_id,
+    u.birthdate,
+    u.created_at,
+    u.country,
+    u.state,
+    u.city,
+    u.gender,
+    u.race,
+    u.is_professional,
+    u.identification_code,
+    u.risk_group,
+    u.is_vigilance;
 	
 	
 DROP VIEW IF EXISTS daily_engagement_percentage;
