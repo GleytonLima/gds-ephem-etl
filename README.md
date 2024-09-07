@@ -613,52 +613,146 @@ DROP VIEW IF EXISTS daily_engagement_percentage;
 CREATE OR REPLACE VIEW daily_engagement_percentage AS
 WITH date_range AS (
     SELECT generate_series(
-        (SELECT MIN(DATE(created_at)) FROM users WHERE is_vbe = true AND deleted_by IS NULL),
+        CURRENT_DATE - INTERVAL '29 days',
         CURRENT_DATE,
         '1 day'::interval
     ) AS date
 ),
-user_cumulative AS (
+user_daily AS (
     SELECT 
         dr.date,
-        COUNT(u.id) FILTER (WHERE DATE(u.created_at) <= dr.date) AS total_users
+        u.country,
+        u.state,
+        u.city,
+        COUNT(DISTINCT u.id) AS total_users
     FROM 
         date_range dr
     CROSS JOIN users u
     WHERE 
-        u.is_vbe = true AND u.is_professional = true AND u.deleted_by IS NULL
+        u.is_vbe = true 
+        AND u.is_professional = true 
+        AND u.deleted_by IS NULL
+        AND u.created_at <= dr.date
+        AND (u.deleted_at IS NULL OR u.deleted_at > dr.date)
     GROUP BY 
-        dr.date
+        dr.date, u.country, u.state, u.city
 ),
 user_daily_answers AS (
     SELECT 
-        DATE(created_at) AS date,
-        COUNT(DISTINCT user_id) AS users_answered,
-        COUNT(*) FILTER (WHERE report_type = 'positive') AS positive_answers,
-        COUNT(*) FILTER (WHERE report_type = 'negative') AS negative_answers
+        DATE(fa.created_at) AS date,
+        u.country,
+        u.state,
+        u.city,
+        COUNT(DISTINCT fa.user_id) AS users_answered,
+        COUNT(*) FILTER (WHERE fa.report_type = 'positive') AS positive_answers,
+        COUNT(*) FILTER (WHERE fa.report_type = 'negative') AS negative_answers
     FROM 
-        flexible_answers_extracted
+        flexible_answers_extracted fa
+    JOIN 
+        users u ON fa.user_id = u.id
+    WHERE 
+        u.is_vbe = true 
+        AND u.is_professional = true 
+        AND u.deleted_by IS NULL
+        AND fa.created_at >= CURRENT_DATE - INTERVAL '29 days'
     GROUP BY 
-        DATE(created_at)
+        DATE(fa.created_at), u.country, u.state, u.city
 )
 SELECT 
-    uc.date,
-    uc.total_users,
+    ud.date,
+    ud.country,
+    ud.state,
+    ud.city,
+    ud.total_users,
     COALESCE(uda.users_answered, 0) AS users_answered,
     COALESCE(uda.positive_answers, 0) AS positive_answers,
     COALESCE(uda.negative_answers, 0) AS negative_answers,
     CASE 
-        WHEN uc.total_users = 0 THEN 0
-        ELSE ROUND(CAST(COALESCE(uda.users_answered, 0) AS NUMERIC) / uc.total_users, 2)
+        WHEN ud.total_users = 0 THEN 0
+        ELSE ROUND(CAST(COALESCE(uda.users_answered, 0) AS NUMERIC) / ud.total_users, 2)
     END AS percentage_answered
 FROM 
-    user_cumulative uc
+    user_daily ud
 LEFT JOIN 
-    user_daily_answers uda ON uc.date = uda.date
+    user_daily_answers uda ON ud.date = uda.date 
+    AND ud.country = uda.country 
+    AND ud.state = uda.state 
+    AND ud.city = uda.city
 WHERE 
-    uc.total_users > 0
+    ud.total_users > 0
 ORDER BY 
-    uc.date;
+    ud.date, ud.country, ud.state, ud.city;
+
+
+-- Sumario do engajamento
+
+DROP VIEW IF EXISTS daily_engagement_summary;
+CREATE OR REPLACE VIEW daily_engagement_summary AS
+WITH date_range AS (
+    SELECT generate_series(
+        CURRENT_DATE - INTERVAL '29 days',
+        CURRENT_DATE,
+        '1 day'::interval
+    ) AS date
+),
+user_daily AS (
+    SELECT 
+        dr.date,
+        u.country,
+        u.state,
+        u.city,
+        COUNT(DISTINCT u.id) AS total_users
+    FROM 
+        date_range dr
+    CROSS JOIN users u
+    WHERE 
+        u.is_vbe = true 
+        AND u.is_professional = true 
+        AND u.deleted_by IS NULL
+        AND u.created_at <= dr.date
+        AND (u.deleted_at IS NULL OR u.deleted_at > dr.date)
+    GROUP BY 
+        dr.date, u.country, u.state, u.city
+),
+user_daily_answers AS (
+    SELECT 
+        DATE(fa.created_at) AS date,
+        u.country,
+        u.state,
+        u.city,
+        COUNT(DISTINCT fa.user_id) AS total_answers
+    FROM 
+        flexible_answers_extracted fa
+    JOIN 
+        users u ON fa.user_id = u.id
+    WHERE 
+        u.is_vbe = true 
+        AND u.is_professional = true 
+        AND u.deleted_by IS NULL
+        AND fa.created_at >= CURRENT_DATE - INTERVAL '29 days'
+    GROUP BY 
+        DATE(fa.created_at), u.country, u.state, u.city
+)
+SELECT 
+    ud.date,
+    ud.city,
+    ud.state,
+    ud.country,
+    ud.total_users,
+    COALESCE(uda.total_answers, 0) AS total_answers,
+    CASE 
+        WHEN ud.total_users = 0 THEN 0
+        ELSE ROUND(CAST(COALESCE(uda.total_answers, 0) AS NUMERIC) / ud.total_users, 4)
+    END AS total_percent
+FROM 
+    user_daily ud
+LEFT JOIN 
+    user_daily_answers uda ON ud.date = uda.date 
+    AND ud.country = uda.country 
+    AND ud.state = uda.state 
+    AND ud.city = uda.city
+ORDER BY 
+    ud.date DESC, ud.country, ud.state, ud.city;
 ```
 
 ## Exemplo de deploy na Digital Ocean
