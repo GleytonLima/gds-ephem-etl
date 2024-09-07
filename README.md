@@ -501,7 +501,7 @@ FROM
     public.flexible_answers_jsonb_view fa
 LEFT JOIN LATERAL jsonb_array_elements(fa.data_corrected->'answers') as ans ON true
 WHERE 
-    fa.flexible_form_version_id = 31
+    fa.flexible_form_version_id = 30
     AND fa.data_corrected->>'report_type' IS NOT NULL
     AND fa.data_corrected->>'report_type' != ''
 GROUP BY
