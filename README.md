@@ -495,6 +495,7 @@ SELECT
     MAX(CASE WHEN ans->>'field' = 'evento_data_ocorrencia' THEN ans->>'value' END) AS evento_data_ocorrencia,
     MAX(CASE WHEN ans->>'field' = 'evento_estado_ocorrencia' THEN ans->>'value' END) AS evento_estado_ocorrencia,
     MAX(CASE WHEN ans->>'field' = 'evento_cidade_ocorrencia' THEN ans->>'value' END) AS evento_cidade_ocorrencia,
+    MAX(CASE WHEN ans->>'field' = 'in_training' THEN ans->>'value' END) AS in_training,
     MAX(CASE WHEN ans->>'field' = 'evento_local_ocorrencia' THEN ans->>'value' END) AS evento_local_ocorrencia,
     MAX(CASE WHEN ans->>'field' = 'evento_detalhes' THEN ans->>'value' END) AS evento_detalhes
 FROM 
@@ -568,7 +569,10 @@ SELECT
     date_part('year'::text, age(date(u.birthdate)::timestamp with time zone)) AS age,
     get_age_group(date_part('year'::text, age(date(u.birthdate)::timestamp with time zone))) AS age_group,
     date(u.created_at) AS user_created_at,
-    u.country,
+    CASE 
+        WHEN u.country = 'Brazil' THEN 'Brasil'
+        ELSE u.country
+    END AS country,
     u.state,
     u.city,
     u.gender,
@@ -606,7 +610,8 @@ GROUP BY
     u.identification_code,
     u.risk_group,
     u.is_vigilance,
-    u.is_vbe;
+    u.is_vbe,
+    u.deleted_by;
 	
 	
 DROP VIEW IF EXISTS daily_engagement_percentage;
