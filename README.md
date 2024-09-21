@@ -531,7 +531,10 @@ SELECT fa.id AS evento_id,
     date_part('year'::text, age(date(u.birthdate)::timestamp with time zone)) AS usuario_idade,
     get_age_group(date_part('year'::text, age(date(u.birthdate)::timestamp with time zone))) AS usuario_faixa_etaria,
     date(u.created_at) AS usuario_data_registro,
-    u.country AS usuario_pais,
+    CASE 
+        WHEN u.country = 'Brazil' THEN 'Brasil'
+        ELSE u.country
+    END AS usuario_pais,
     u.state AS usuario_estado,
     u.city AS usuario_cidade,
     u.gender AS usuario_sexo,
@@ -589,11 +592,26 @@ SELECT fa.id AS evento_id,
      LEFT JOIN LATERAL jsonb_array_elements(fa.data_corrected -> 'answers'::text) ans(value) ON true
      LEFT JOIN users u ON fa.user_id = u.id
   WHERE fa.flexible_form_version_id = 30
-  GROUP BY fa.id, fa.user_id, (fa.created_at::date), fa.created_at, fa.updated_at, fa.external_system_integration_id, (f
-a.data_corrected ->> 'report_type'::text), (fa.data_corrected ->> 'in_training'::text), ((fa.data_corrected ->> 'send_at
-'::text)::timestamp without time zone), (date_part('year'::text, age(date(u.birthdate)::timestamp with time zone))), (ge
-t_age_group(date_part('year'::text, age(date(u.birthdate)::timestamp with time zone)))), (date(u.created_at)), u.country
-, u.state, u.city, u.gender, u.race, u.is_professional, u.is_vbe, u.in_training, u.deleted_by;
+  GROUP BY fa.id, 
+  fa.user_id, 
+  (fa.created_at::date), 
+  fa.created_at, fa.updated_at, 
+  fa.external_system_integration_id, 
+  (fa.data_corrected ->> 'report_type'::text), 
+  (fa.data_corrected ->> 'in_training'::text), 
+  ((fa.data_corrected ->> 'send_at'::text)::timestamp without time zone), 
+  (date_part('year'::text, age(date(u.birthdate)::timestamp with time zone))), 
+  (get_age_group(date_part('year'::text, age(date(u.birthdate)::timestamp with time zone)))), 
+  (date(u.created_at)), 
+  u.country, 
+  u.state, 
+  u.city, 
+  u.gender, 
+  u.race, 
+  u.is_professional, 
+  u.is_vbe,
+  u.in_training, 
+  u.deleted_by;
 
 -- Detalhes Lideres
 
@@ -706,7 +724,10 @@ WITH date_range AS (
 user_daily AS (
     SELECT 
         dr.date,
-        u.country,
+        CASE 
+            WHEN u.country = 'Brazil' THEN 'Brasil'
+            ELSE u.country
+        END AS country,
         u.state,
         u.city,
         COUNT(DISTINCT u.id) AS total_users
@@ -725,7 +746,10 @@ user_daily AS (
 user_daily_answers AS (
     SELECT 
         DATE(fa.created_at) AS date,
-        u.country,
+        CASE 
+            WHEN u.country = 'Brazil' THEN 'Brasil'
+            ELSE u.country
+        END AS country,
         u.state,
         u.city,
         COUNT(DISTINCT fa.user_id) AS users_answered,
@@ -783,7 +807,10 @@ WITH date_range AS (
 user_daily AS (
     SELECT 
         dr.date,
-        u.country,
+        CASE 
+            WHEN u.country = 'Brazil' THEN 'Brasil'
+            ELSE u.country
+        END AS country,
         u.state,
         u.city,
         COUNT(DISTINCT u.id) AS total_users
@@ -802,7 +829,10 @@ user_daily AS (
 user_daily_answers AS (
     SELECT 
         DATE(fa.created_at) AS date,
-        u.country,
+        CASE 
+            WHEN u.country = 'Brazil' THEN 'Brasil'
+            ELSE u.country
+        END AS country,
         u.state,
         u.city,
         COUNT(DISTINCT fa.user_id) AS total_answers
