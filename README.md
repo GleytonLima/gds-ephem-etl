@@ -495,6 +495,7 @@ SELECT
     MAX(CASE WHEN ans->>'field' = 'evento_data_ocorrencia' THEN ans->>'value' END) AS evento_data_ocorrencia,
     MAX(CASE WHEN ans->>'field' = 'evento_estado_ocorrencia' THEN ans->>'value' END) AS evento_estado_ocorrencia,
     MAX(CASE WHEN ans->>'field' = 'evento_cidade_ocorrencia' THEN ans->>'value' END) AS evento_cidade_ocorrencia,
+    MAX(CASE WHEN ans->>'field' = 'in_training' THEN ans->>'value' END) AS in_training,
     MAX(CASE WHEN ans->>'field' = 'evento_local_ocorrencia' THEN ans->>'value' END) AS evento_local_ocorrencia,
     MAX(CASE WHEN ans->>'field' = 'evento_detalhes' THEN ans->>'value' END) AS evento_detalhes
 FROM 
@@ -513,6 +514,104 @@ GROUP BY
     fa.external_system_integration_id,
     fa.data_corrected->>'report_type',
     fa.data_corrected->>'send_at';
+
+
+-- Vbe Eventos Usuários vw_vbe_eventos_usuarios
+DROP VIEW IF EXISTS vw_vbe_eventos_usuarios;
+CREATE OR REPLACE VIEW public.vw_vbe_eventos_usuarios AS
+SELECT fa.id AS evento_id,
+    fa.user_id AS usuario_id,
+    fa.created_at::date AS evento_data_registro,
+    fa.created_at AS evento_datahora_registro,
+    fa.updated_at AS evento_data_alteracao,
+    fa.external_system_integration_id AS evento_ephem_id,
+    fa.data_corrected ->> 'report_type'::text AS evento_tipo_reporte,
+    fa.data_corrected ->> 'in_training'::text AS evento_em_treinamento,
+    (fa.data_corrected ->> 'send_at'::text)::timestamp without time zone AS evento_enviado_em,
+    date_part('year'::text, age(date(u.birthdate)::timestamp with time zone)) AS usuario_idade,
+    get_age_group(date_part('year'::text, age(date(u.birthdate)::timestamp with time zone))) AS usuario_faixa_etaria,
+    date(u.created_at) AS usuario_data_registro,
+    CASE 
+        WHEN u.country = 'Brazil' THEN 'Brasil'
+        ELSE u.country
+    END AS usuario_pais,
+    u.state AS usuario_estado,
+    u.city AS usuario_cidade,
+    u.gender AS usuario_sexo,
+    u.race AS usuario_raca,
+    u.is_professional AS usuario_lider_comunitario,
+    u.is_vbe AS usuario_vbe,
+    u.in_training AS usuario_treinamento,
+    u.deleted_by AS usuario_deletado,
+    max(
+        CASE
+            WHEN (ans.value ->> 'field'::text) = 'evento_descricao'::text THEN ans.value ->> 'value'::text
+            ELSE NULL::text
+        END) AS evento_descricao,
+    max(
+        CASE
+            WHEN (ans.value ->> 'field'::text) = 'evento_qtde_envolvidos'::text THEN ans.value ->> 'value'::text
+            ELSE NULL::text
+        END) AS evento_qtde_envolvidos,
+    max(
+        CASE
+            WHEN (ans.value ->> 'field'::text) = 'evento_afetados'::text THEN ans.value ->> 'value'::text
+            ELSE NULL::text
+        END) AS evento_afetados,
+    max(
+        CASE
+            WHEN (ans.value ->> 'field'::text) = 'evento_sabe_quando_ocorreu'::text THEN ans.value ->> 'value'::text
+            ELSE NULL::text
+        END) AS evento_sabe_quando_ocorreu,
+    max(
+        CASE
+            WHEN (ans.value ->> 'field'::text) = 'evento_data_ocorrencia'::text THEN ans.value ->> 'value'::text
+            ELSE NULL::text
+        END) AS evento_data_ocorrencia,
+    max(
+        CASE
+            WHEN (ans.value ->> 'field'::text) = 'evento_estado_ocorrencia'::text THEN ans.value ->> 'value'::text
+            ELSE NULL::text
+        END) AS evento_estado_ocorrencia,
+    max(
+        CASE
+            WHEN (ans.value ->> 'field'::text) = 'evento_cidade_ocorrencia'::text THEN ans.value ->> 'value'::text
+            ELSE NULL::text
+        END) AS evento_cidade_ocorrencia,
+    max(
+        CASE
+            WHEN (ans.value ->> 'field'::text) = 'evento_local_ocorrencia'::text THEN ans.value ->> 'value'::text
+            ELSE NULL::text
+        END) AS evento_local_ocorrencia,
+    max(
+        CASE
+            WHEN (ans.value ->> 'field'::text) = 'evento_detalhes'::text THEN ans.value ->> 'value'::text
+            ELSE NULL::text
+        END) AS evento_detalhes
+   FROM flexible_answers_jsonb_view fa
+     LEFT JOIN LATERAL jsonb_array_elements(fa.data_corrected -> 'answers'::text) ans(value) ON true
+     LEFT JOIN users u ON fa.user_id = u.id
+  WHERE fa.flexible_form_version_id = 30
+  GROUP BY fa.id, 
+  fa.user_id, 
+  (fa.created_at::date), 
+  fa.created_at, fa.updated_at, 
+  fa.external_system_integration_id, 
+  (fa.data_corrected ->> 'report_type'::text), 
+  (fa.data_corrected ->> 'in_training'::text), 
+  ((fa.data_corrected ->> 'send_at'::text)::timestamp without time zone), 
+  (date_part('year'::text, age(date(u.birthdate)::timestamp with time zone))), 
+  (get_age_group(date_part('year'::text, age(date(u.birthdate)::timestamp with time zone)))), 
+  (date(u.created_at)), 
+  u.country, 
+  u.state, 
+  u.city, 
+  u.gender, 
+  u.race, 
+  u.is_professional, 
+  u.is_vbe,
+  u.in_training, 
+  u.deleted_by;
 
 -- Detalhes Lideres
 
@@ -568,7 +667,10 @@ SELECT
     date_part('year'::text, age(date(u.birthdate)::timestamp with time zone)) AS age,
     get_age_group(date_part('year'::text, age(date(u.birthdate)::timestamp with time zone))) AS age_group,
     date(u.created_at) AS user_created_at,
-    u.country,
+    CASE 
+        WHEN u.country = 'Brazil' THEN 'Brasil'
+        ELSE u.country
+    END AS country,
     u.state,
     u.city,
     u.gender,
@@ -606,7 +708,8 @@ GROUP BY
     u.identification_code,
     u.risk_group,
     u.is_vigilance,
-    u.is_vbe;
+    u.is_vbe,
+    u.deleted_by;
 	
 	
 DROP VIEW IF EXISTS daily_engagement_percentage;
@@ -621,7 +724,10 @@ WITH date_range AS (
 user_daily AS (
     SELECT 
         dr.date,
-        u.country,
+        CASE 
+            WHEN u.country = 'Brazil' THEN 'Brasil'
+            ELSE u.country
+        END AS country,
         u.state,
         u.city,
         COUNT(DISTINCT u.id) AS total_users
@@ -640,7 +746,10 @@ user_daily AS (
 user_daily_answers AS (
     SELECT 
         DATE(fa.created_at) AS date,
-        u.country,
+        CASE 
+            WHEN u.country = 'Brazil' THEN 'Brasil'
+            ELSE u.country
+        END AS country,
         u.state,
         u.city,
         COUNT(DISTINCT fa.user_id) AS users_answered,
@@ -698,7 +807,10 @@ WITH date_range AS (
 user_daily AS (
     SELECT 
         dr.date,
-        u.country,
+        CASE 
+            WHEN u.country = 'Brazil' THEN 'Brasil'
+            ELSE u.country
+        END AS country,
         u.state,
         u.city,
         COUNT(DISTINCT u.id) AS total_users
@@ -717,7 +829,10 @@ user_daily AS (
 user_daily_answers AS (
     SELECT 
         DATE(fa.created_at) AS date,
-        u.country,
+        CASE 
+            WHEN u.country = 'Brazil' THEN 'Brasil'
+            ELSE u.country
+        END AS country,
         u.state,
         u.city,
         COUNT(DISTINCT fa.user_id) AS total_answers
