@@ -1,5 +1,5 @@
 # Define a imagem base
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jre
 
 # Define o diretório de trabalho dentro do contêiner
 WORKDIR /app
